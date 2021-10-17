@@ -22,7 +22,7 @@ async function getAccountBalance(address: string, currency: string): Promise<Acc
 
 async function getAccount(address: string): Promise<Account> {
   // Creates an account if it doesn't exist
-  let account = await Account.get(address);
+  let account = await Account.get(address); 
   if (!account) {
     account = new Account(address);
     await account.save();
@@ -34,7 +34,7 @@ async function update_balance(accountBalance: AccountBalance, to_from: string, a
   // Generate transfer record
   const transferRecord = new CurrencyTransfer(`${transferId}-${to_from}`);
   transferRecord.accountBalanceId = accountBalance.id;
-  transferRecord.date = transferTime;
+  transferRecord.date = transferTime.toString();
 
   if (to_from == 'from') {
     accountBalance.balance = (parseFloat(accountBalance.balance) - parseFloat(amount)).toString();
