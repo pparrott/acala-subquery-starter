@@ -30,21 +30,22 @@ async function getAccount(address: string): Promise<Account> {
   return account;
 }
 
-async function update_balance(accountBalance: AccountBalance, to_from: string, amount: string, transferId: string): Promise<void> {
+async function update_balance(accountBalance: AccountBalance, to_from: string, amount: string, transferId: string, transferTime: bigint): Promise<void> {
   // Generate transfer record
   const transferRecord = new CurrencyTransfer(`${transferId}-${to_from}`);
-  transferRecord.accountBalanceId = accountBalance.id
+  transferRecord.accountBalanceId = accountBalance.id;
+  transferRecord.date = transferTime;
 
   if (to_from == 'from') {
     accountBalance.balance = (parseFloat(accountBalance.balance) - parseFloat(amount)).toString();
-    transferRecord.amount = (-1 * parseFloat(amount)).toString()
+    transferRecord.amount = (-1 * parseFloat(amount)).toString();
   } else {
     accountBalance.balance = (parseFloat(accountBalance.balance) + parseFloat(amount)).toString();
-    transferRecord.amount = (parseFloat(amount)).toString()
+    transferRecord.amount = (parseFloat(amount)).toString();
   }
   
-  await transferRecord.save()
-  await accountBalance.save()
+  await transferRecord.save();
+  await accountBalance.save();
 
   return
 }
@@ -75,6 +76,7 @@ export async function handleAccountEvent(event: SubstrateEvent): Promise<void> {
   } = event;
 
   const transferId = `${event.block.block.header.number.toNumber()}-${event.idx}`
+  const transferTime = BigInt(event.extrinsic.block.timestamp.getTime());
 
   let [currencyFrom, currencyTo] = getToken(currency);
 
@@ -84,8 +86,8 @@ export async function handleAccountEvent(event: SubstrateEvent): Promise<void> {
   let fromAccountBalance = await getAccountBalance(from.toString(), currencyFrom);
   let toAccountBalance = await getAccountBalance(to.toString(), currencyTo);
 
-  await update_balance(fromAccountBalance, 'from', amount.toString(), transferId);
-  await update_balance(toAccountBalance, 'to', amount.toString(), transferId);
+  await update_balance(fromAccountBalance, 'from', amount.toString(), transferId, transferTime);
+  await update_balance(toAccountBalance, 'to', amount.toString(), transferId, transferTime);
 
   await fromAccount.save();
   await toAccount.save();
