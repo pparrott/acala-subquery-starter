@@ -62,12 +62,7 @@ function getToken(currencyId: Codec): string[] {
   return [];
 }
 
-export async function handleAccountEvent(event: SubstrateEvent): Promise<void> {
-  // Check if event is correct 
-  if (event.event.section != "currencies" || event.event.method != "Transferred") {
-    return;
-  }
-
+async function handleAccountEvent(event: SubstrateEvent): Promise<void> {
   // convert events
   const { 
     event: {
@@ -91,4 +86,28 @@ export async function handleAccountEvent(event: SubstrateEvent): Promise<void> {
 
   await fromAccount.save();
   await toAccount.save();
+}
+
+async function handleSwapEvent(event: SubstrateEvent): Promise<void> {
+  // convert event 
+  const {
+    event: {
+      data: [accountId, currencies, balances],
+    },
+  } = event;
+  
+  const swapTime = BigInt(event.extrinsic.block.timestamp.getTime());
+
+  
+  return 
+}
+
+export async function handleEvent(event: SubstrateEvent): Promise<void> {
+  if (event.event.section == "currencies" && event.event.method == "Transferred") {
+    await handleAccountEvent(event);
+  } else if (event.event.section == "dex" && event.event.method == "Swap") {
+    await handleSwapEvent(event);
+  }
+  
+  return
 }

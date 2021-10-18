@@ -27,3 +27,33 @@ type CurrencyTransfer @entity {
   date: String!
 
 }
+
+type TokenPrice @entity {
+  id: ID!
+
+  tokenFrom: String!
+  
+  tokenTo: String!
+
+  date: String! 
+
+  price: String!
+
+  swaps: [TokenSwap] @derivedFrom(field: "tokenPrice")
+
+}
+
+type TokenSwap @entity {
+  id: ID!
+
+  tokenPrice: TokenPrice!
+  
+  tokenFrom: String!
+  
+  tokenTo: String!
+
+  date: String!
+
+  conversionRate: String!
+
+}
