@@ -120,7 +120,7 @@ function convertTime(fullDate: Date): number {
     }
   }
   
-  let dateOut = dateObj['year'] + dateObj['month'] + dateObj['day']
+  let dateOut = dateObj['year'] + dateObj['month'] + dateObj['day'];
 
   return parseInt(dateOut);
 }
@@ -160,7 +160,7 @@ async function handleLiquidityEvent(event: SubstrateEvent, add_remove: string): 
   } = event;
   // convert event time to 'YYYYMMDD'
   const eventTime = BigInt(event.extrinsic.block.timestamp.getTime());
-  const eventTimeDate = new Date(String(eventTime));
+  const eventTimeDate = new Date(Number(eventTime));
   const eventTimeInt = convertTime(eventTimeDate);
   // parse token values
   const token0Parse = getLiquidityToken(token0);
