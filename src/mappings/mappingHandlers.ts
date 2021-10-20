@@ -83,7 +83,19 @@ async function updateDailyPool(dailyPool: LiquidityDailySummary, token0Amt: stri
   return
 }
 
-function getToken(currencyId: Codec): string {
+function getTransferToken(currencyId: Codec): string[] {
+  const currencyJson = JSON.parse(currencyId.toString());
+
+  if (currencyJson.token) return [currencyJson.token, currencyJson.token];
+  if (currencyJson.dexShare) {
+    const [tokenA, tokenB] = currencyJson.dexShare;
+    return [tokenA, tokenB];
+  }
+
+  return [];
+}
+
+function getLiquidityToken(currencyId: Codec): string {
   const currencyJson = JSON.parse(currencyId.toString());
 
   if (currencyJson.token) return currencyJson.token;
@@ -124,7 +136,7 @@ async function handleAccountEvent(event: SubstrateEvent): Promise<void> {
   const transferId = `${event.block.block.header.number.toNumber()}-${event.idx}`
   const transferTime = BigInt(event.extrinsic.block.timestamp.getTime());
 
-  let [currencyFrom, currencyTo] = getToken(currency);
+  let [currencyFrom, currencyTo] = getTransferToken(currency);
 
   let fromAccount = await getAccount(from.toString());
   let toAccount = await getAccount(to.toString());
@@ -151,8 +163,8 @@ async function handleLiquidityEvent(event: SubstrateEvent, add_remove: string): 
   const eventTimeDate = new Date(String(eventTime));
   const eventTimeInt = convertTime(eventTimeDate);
   // parse token values
-  const token0Parse = getToken(token0);
-  const token1Parse = getToken(token1);
+  const token0Parse = getLiquidityToken(token0);
+  const token1Parse = getLiquidityToken(token1);
   // return daily pool level for gieven tokens and update
   let dailyPool = await getDailyPool(token0Parse, token1Parse, eventTimeInt.toString());
   await updateDailyPool(dailyPool, token0Amt.toString(), token1Amt.toString(), add_remove);
@@ -163,9 +175,9 @@ async function handleLiquidityEvent(event: SubstrateEvent, add_remove: string): 
 export async function handleEvent(event: SubstrateEvent): Promise<void> {
   if (event.event.section == "currencies" && event.event.method == "Transferred") {
     await handleAccountEvent(event);
-  } else if (event.event.section == "dex" && event.event.method == "AddLiquidityEvent") {
+  } else if (event.event.section == "dex" && event.event.method == "AddLiquidity") {
     await handleLiquidityEvent(event, 'add');
-  } else if (event.event.section == "dex" && event.event.method == "RemoveLiquidityEvent") {
+  } else if (event.event.section == "dex" && event.event.method == "RemoveLiquidity") {
     await handleLiquidityEvent(event, 'remove');
   }
   
