@@ -2,6 +2,7 @@ import { SubstrateEvent } from "@subql/types";
 import { Codec } from "@polkadot/types/types";
 import { AccountBalance, Account, CurrencyTransfer } from "../types";
 import { Balance } from "@polkadot/types/interfaces";
+import { Int } from "@polkadot/types";
 
 async function getAccountBalance(address: string, currency: string): Promise<AccountBalance> {
 
@@ -62,6 +63,24 @@ function getToken(currencyId: Codec): string[] {
   return [];
 }
 
+function convertTime(fullDate: Date): number {
+  // Converts unix time to 'YYYYMMDD'
+  let dateObj = {}
+  dateObj['year'] = fullDate.getFullYear().toString();
+  dateObj['month'] = fullDate.getMonth().toString();
+  dateObj['day'] = fullDate.getDate().toString();
+
+  for (const dateProperty in dateObj) {
+    if (dateObj[dateProperty].length == 1) {
+      dateObj[dateProperty] = '0' + dateObj[dateProperty];
+    }
+  }
+  
+  let dateOut = dateObj['year'] + dateObj['month'] + dateObj['day']
+
+  return parseInt(dateOut);
+}
+
 async function handleAccountEvent(event: SubstrateEvent): Promise<void> {
   // convert events
   const { 
@@ -88,16 +107,21 @@ async function handleAccountEvent(event: SubstrateEvent): Promise<void> {
   await toAccount.save();
 }
 
-async function handleSwapEvent(event: SubstrateEvent): Promise<void> {
+async function handleLiquidityEvent(event: SubstrateEvent, add_remove: string): Promise<void> {
   // convert event 
   const {
     event: {
-      data: [accountId, currencies, balances],
+      data: [accountId, tokenA, incrementA, tokenB, incrementB],
     },
   } = event;
   
-  const swapTime = BigInt(event.extrinsic.block.timestamp.getTime());
+  const eventTime = BigInt(event.extrinsic.block.timestamp.getTime());
+  const eventTimeDate = new Date(String(eventTime));
+  const eventTimeInt = convertTime(eventTimeDate);
 
+  const liquidityId = `${event.block.block.header.number.toNumber()}-${event.idx}`;
+
+  //
   
   return 
 }
@@ -105,9 +129,13 @@ async function handleSwapEvent(event: SubstrateEvent): Promise<void> {
 export async function handleEvent(event: SubstrateEvent): Promise<void> {
   if (event.event.section == "currencies" && event.event.method == "Transferred") {
     await handleAccountEvent(event);
-  } else if (event.event.section == "dex" && event.event.method == "Swap") {
-    await handleSwapEvent(event);
+  } else if (event.event.section == "dex" && event.event.method == "AddLiquidityEvent") {
+    await handleLiquidityEvent(event, 'add');
+  } else if (event.event.section == "dex" && event.event.method == "RemoveLiquidityEvent") {
+    await handleLiquidityEvent(event, 'remove');
   }
   
   return
 }
+
+api.query.system.account('5F98oWfz2r5rcRVnP9VCndg33DAAsky3iuoBSpaPUbgN9AJn');

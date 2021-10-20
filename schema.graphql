@@ -28,32 +28,36 @@ type CurrencyTransfer @entity {
 
 }
 
-type TokenPrice @entity {
+type LiquidityDailySummary @entity {
   id: ID!
 
-  tokenFrom: String!
+  tokenA: String!
   
-  tokenTo: String!
+  tokenB: String!
 
   date: String! 
 
-  price: String!
+  tokenAVolume: String!
 
-  swaps: [TokenSwap] @derivedFrom(field: "tokenPrice")
+  tokenBVolume
+
+  liquidityEvents: [LiquidityEvent] @derivedFrom(field: "tokenPrice")
 
 }
 
-type TokenSwap @entity {
+type LiquidityEvent @entity {
   id: ID!
 
-  tokenPrice: TokenPrice!
+  tokenAB
+
+  tokenA: String!
   
-  tokenFrom: String!
+  tokenB: String!
   
-  tokenTo: String!
+  tokenAVolume: String!
+
+  tokenBVolume: String!
 
   date: String!
-
-  conversionRate: String!
 
 }
