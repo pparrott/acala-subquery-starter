@@ -3600,7 +3600,7 @@ dataSources:
     startBlock: 100000
     mapping:
       handlers:
-        - handler: handleAccountEvent
+        - handler: handleEvent
           kind: substrate/EventHandler
           filter:
             module: currencies

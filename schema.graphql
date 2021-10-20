@@ -31,33 +31,14 @@ type CurrencyTransfer @entity {
 type LiquidityDailySummary @entity {
   id: ID!
 
-  tokenA: String!
+  token0: String!
   
-  tokenB: String!
+  token1: String!
 
   date: String! 
 
-  tokenAVolume: String!
+  token0DailyTotal: String!
 
-  tokenBVolume
-
-  liquidityEvents: [LiquidityEvent] @derivedFrom(field: "tokenPrice")
-
-}
-
-type LiquidityEvent @entity {
-  id: ID!
-
-  tokenAB
-
-  tokenA: String!
-  
-  tokenB: String!
-  
-  tokenAVolume: String!
-
-  tokenBVolume: String!
-
-  date: String!
+  token1DailyTotal: String!
 
 }

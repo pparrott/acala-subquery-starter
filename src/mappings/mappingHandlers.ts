@@ -1,6 +1,6 @@
 import { SubstrateEvent } from "@subql/types";
 import { Codec } from "@polkadot/types/types";
-import { AccountBalance, Account, CurrencyTransfer } from "../types";
+import { AccountBalance, Account, CurrencyTransfer, LiquidityDailySummary } from "../types";
 import { Balance } from "@polkadot/types/interfaces";
 import { Int } from "@polkadot/types";
 
@@ -31,7 +31,25 @@ async function getAccount(address: string): Promise<Account> {
   return account;
 }
 
-async function update_balance(accountBalance: AccountBalance, to_from: string, amount: string, transferId: string, transferTime: bigint): Promise<void> {
+async function getDailyPool(token0: string, token1: string, day: string): Promise<LiquidityDailySummary> {
+  const dailyPoolId = token0 + '|' + token1 + '|' + day;
+  // creates the daily pool if it doesn't exist
+  let dailyPool = await LiquidityDailySummary.get(dailyPoolId);
+
+  if(!dailyPool) {
+    dailyPool = new LiquidityDailySummary(dailyPoolId); 
+    dailyPool.token0 = token0;
+    dailyPool.token1 = token1;
+    dailyPool.date = day;
+    dailyPool.token0DailyTotal = '0';
+    dailyPool.token1DailyTotal = '0';
+    await dailyPool.save()
+  }
+
+  return dailyPool
+}
+
+async function updateBalance(accountBalance: AccountBalance, to_from: string, amount: string, transferId: string, transferTime: bigint): Promise<void> {
   // Generate transfer record
   const transferRecord = new CurrencyTransfer(`${transferId}-${to_from}`);
   transferRecord.accountBalanceId = accountBalance.id;
@@ -51,16 +69,30 @@ async function update_balance(accountBalance: AccountBalance, to_from: string, a
   return
 }
 
-function getToken(currencyId: Codec): string[] {
+async function updateDailyPool(dailyPool: LiquidityDailySummary, token0Amt: string, token1Amt: string, add_remove: string): Promise<void> {
+  let addFactor: bigint
+  
+  if (add_remove == 'remove') addFactor = BigInt(-1);
+  else addFactor = BigInt(1);
+
+  dailyPool.token0DailyTotal = (BigInt(dailyPool.token0DailyTotal) + addFactor * BigInt(token0Amt)).toString();
+  dailyPool.token1DailyTotal = (BigInt(dailyPool.token1DailyTotal) + addFactor * BigInt(token1Amt)).toString();
+
+  dailyPool.save()
+
+  return
+}
+
+function getToken(currencyId: Codec): string {
   const currencyJson = JSON.parse(currencyId.toString());
 
-  if (currencyJson.token) return [currencyJson.token, currencyJson.token];
+  if (currencyJson.token) return currencyJson.token;
   if (currencyJson.dexShare) {
     const [tokenA, tokenB] = currencyJson.dexShare;
-    return [tokenA, tokenB];
+    return `${tokenA.token}<>${tokenB.token} LP`;
   }
 
-  return [];
+  return '??';
 }
 
 function convertTime(fullDate: Date): number {
@@ -100,8 +132,8 @@ async function handleAccountEvent(event: SubstrateEvent): Promise<void> {
   let fromAccountBalance = await getAccountBalance(from.toString(), currencyFrom);
   let toAccountBalance = await getAccountBalance(to.toString(), currencyTo);
 
-  await update_balance(fromAccountBalance, 'from', amount.toString(), transferId, transferTime);
-  await update_balance(toAccountBalance, 'to', amount.toString(), transferId, transferTime);
+  await updateBalance(fromAccountBalance, 'from', amount.toString(), transferId, transferTime);
+  await updateBalance(toAccountBalance, 'to', amount.toString(), transferId, transferTime);
 
   await fromAccount.save();
   await toAccount.save();
@@ -111,18 +143,20 @@ async function handleLiquidityEvent(event: SubstrateEvent, add_remove: string): 
   // convert event 
   const {
     event: {
-      data: [accountId, tokenA, incrementA, tokenB, incrementB],
+      data: [accountId, token0, token0Amt, token1, token1Amt, shareIncrement],
     },
   } = event;
-  
+  // convert event time to 'YYYYMMDD'
   const eventTime = BigInt(event.extrinsic.block.timestamp.getTime());
   const eventTimeDate = new Date(String(eventTime));
   const eventTimeInt = convertTime(eventTimeDate);
+  // parse token values
+  const token0Parse = getToken(token0);
+  const token1Parse = getToken(token1);
+  // return daily pool level for gieven tokens and update
+  let dailyPool = await getDailyPool(token0Parse, token1Parse, eventTimeInt.toString());
+  await updateDailyPool(dailyPool, token0Amt.toString(), token1Amt.toString(), add_remove);
 
-  const liquidityId = `${event.block.block.header.number.toNumber()}-${event.idx}`;
-
-  //
-  
   return 
 }
 
@@ -137,5 +171,3 @@ export async function handleEvent(event: SubstrateEvent): Promise<void> {
   
   return
 }
-
-api.query.system.account('5F98oWfz2r5rcRVnP9VCndg33DAAsky3iuoBSpaPUbgN9AJn');
