@@ -3602,6 +3602,6 @@ dataSources:
       handlers:
         - handler: handleEvent
           kind: substrate/EventHandler
-          filter:
-            module: currencies
-            method: Transferred
+          # filter:
+          #   module: currencies
+          #   method: Transferred
