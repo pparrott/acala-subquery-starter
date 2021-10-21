@@ -160,14 +160,14 @@ async function handleLiquidityEvent(event: SubstrateEvent, add_remove: string): 
   } = event;
   // convert event time to 'YYYYMMDD'
   const eventTime = BigInt(event.extrinsic.block.timestamp.getTime());
-  // const eventTimeDate = new Date(Number(eventTime));
-  // const eventTimeInt = convertTime(eventTimeDate);
+  const eventTimeDate = new Date(Number(eventTime));
+  const eventTimeInt = convertTime(eventTimeDate);
   // parse token values
   const token0Parse = getLiquidityToken(token0);
   const token1Parse = getLiquidityToken(token1);
   // return daily pool level for gieven tokens and update
   // let dailyPool = await getDailyPool(token0Parse, token1Parse, eventTimeInt.toString());
-  let dailyPool = await getDailyPool(token0Parse, token1Parse, eventTime.toString());
+  let dailyPool = await getDailyPool(token0Parse, token1Parse, eventTimeInt.toString());
   await updateDailyPool(dailyPool, token0Amt.toString(), token1Amt.toString(), add_remove);
 
   return 
