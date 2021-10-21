@@ -111,7 +111,7 @@ function convertTime(fullDate: Date): number {
   // Converts unix time to 'YYYYMMDD'
   let dateObj = {}
   dateObj['year'] = fullDate.getFullYear().toString();
-  dateObj['month'] = fullDate.getMonth().toString();
+  dateObj['month'] = (fullDate.getMonth() + 1).toString();  // getMonth is zero-indexed
   dateObj['day'] = fullDate.getDate().toString();
 
   for (const dateProperty in dateObj) {
